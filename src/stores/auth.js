@@ -69,7 +69,6 @@ export const useAuthStore = defineStore('auth', () => {
           user.value = {};
           isAdmin.value = false;
           isLoggedIn.value = false;
-          console.log('onAuthStateChanged ~ isLoggedIn:', isLoggedIn);
         }
       });
     } catch (error) {
