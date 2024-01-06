@@ -48,7 +48,8 @@ export const useFileStore = defineStore('file', () => {
     });
   }
 
-  async function uploadFile(file, concertName, songName) {
+  async function uploadFile(files, concertName, songName) {
+    console.log('uploadFile ~ files:', files);
     const allowedAudioFiles = [
       'audio/mpeg',
       'audio/mp3',
@@ -60,61 +61,34 @@ export const useFileStore = defineStore('file', () => {
     uploadError.value = false;
     isLoading.value = true;
 
-    const fileExists = fileList.value.some((item) => item.name === file.name);
+    for (const file of files) {
+      const fileExists = fileList.value.some((item) => item.name === file.name);
 
-    if (fileExists) {
-      uploadError.value = true;
-      uploadErrorMessage.value = `Het bestand met de naam "${file.name}" bestaat al.`;
-      return;
-    }
+      if (fileExists) {
+        uploadError.value = true;
+        uploadErrorMessage.value = `Het bestand met de naam "${file.name}" bestaat al.`;
+        return;
+      }
 
-    if (allowedAudioFiles.includes(file.type)) {
-      const storageRef = firebaseStorageRef(
-        storage,
-        concertName.value
-          ? `${concertName.value}/${songName.value}/${file.name}`
-          : file.name
-      );
-      await uploadBytes(storageRef, file);
-      fetchFileList();
-      fileInput.value = null;
-      isLoading.value = false;
-    } else {
-      uploadError.value = true;
-      uploadErrorMessage.value =
-        'Ongeldig bestandstype. Alleen specifieke bestandstypen zijn toegestaan!';
-      isLoading.value = false;
+      if (allowedAudioFiles.includes(file.type)) {
+        const storageRef = firebaseStorageRef(
+          storage,
+          concertName.value
+            ? `${concertName.value}/${songName.value}/${file.name}`
+            : file.name
+        );
+        await uploadBytes(storageRef, file);
+        fetchFileList();
+        fileInput.value = null;
+        isLoading.value = false;
+      } else {
+        uploadError.value = true;
+        uploadErrorMessage.value =
+          'Ongeldig bestandstype. Alleen specifieke bestandstypen zijn toegestaan!';
+        isLoading.value = false;
+      }
     }
   }
-
-  // async function fetchFileList() {
-  //   isLoading.value = true;
-  //   const listRef = firebaseStorageRef(storage, '');
-  //   const listResult = await listAll(listRef);
-
-  //   try {
-  //     const items = listResult.items.map((item) => {
-  //       return {
-  //         name: item.name,
-  //         isFolder: false,
-  //         folderName: folderName.value,
-  //       };
-  //     });
-  //     const folders = listResult.prefixes.map((prefix) => {
-  //       return {
-  //         name: prefix.name,
-  //         isFolder: true,
-  //         files: [],
-  //       };
-  //     });
-
-  //     fileList.value = [...items, ...folders];
-  //     isLoading.value = false;
-  //   } catch (error) {
-  //     console.error('Fout bij ophalen van bestanden:', error);
-  //     isLoading.value = false;
-  //   }
-  // }
 
   async function fetchFileList() {
     isLoading.value = true;
@@ -122,7 +96,6 @@ export const useFileStore = defineStore('file', () => {
 
     try {
       async function explorePrefixes(prefixes, currentPath = '') {
-        console.log('explorePrefixes ~ prefixes:', prefixes);
         if (!prefixes || prefixes.length === 0) return [];
 
         const folders = [];
@@ -190,7 +163,6 @@ export const useFileStore = defineStore('file', () => {
       ? `${concertPath}/${songPath}/${file.name}`
       : file.name;
     const storageRef = firebaseStorageRef(storage, filePath);
-    console.log('deleteFile ~ storageRef:', storageRef.name);
 
     try {
       await deleteObject(storageRef);

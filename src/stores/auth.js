@@ -13,10 +13,13 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoggedIn = ref(false);
   const isAdmin = ref(false);
   const router = useRouter();
+  const errorMessage = ref(null);
 
   const auth = getAuth();
 
   const login = async (email, password) => {
+    errorMessage.value = null;
+
     try {
       const userCredentials = await signInWithEmailAndPassword(
         auth,
@@ -29,7 +32,9 @@ export const useAuthStore = defineStore('auth', () => {
       user.value.email = authenticatedUser.email;
       isLoggedIn.value = true;
       console.log('login ~ isLoggedIn:', isLoggedIn);
+      router.replace('/');
     } catch (error) {
+      errorMessage.value = 'Fout bij inloggen!!';
       console.error('Fout bij inloggen:', error.message);
     }
   };
@@ -54,7 +59,6 @@ export const useAuthStore = defineStore('auth', () => {
           user.value.id = userCredentials.uid;
           user.value.email = userCredentials.email;
           isLoggedIn.value = true;
-          console.log('onAuthStateChanged ~ isLoggedIn:', isLoggedIn);
 
           if (idTokenResult.claims.rol === 'admin') {
             isAdmin.value = true;
@@ -76,5 +80,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  return { login, logout, init, user, isAdmin, isLoggedIn };
+  return { login, logout, init, user, isAdmin, isLoggedIn, errorMessage };
 });
