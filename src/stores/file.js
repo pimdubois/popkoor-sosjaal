@@ -15,9 +15,40 @@ export const useFileStore = defineStore('file', () => {
   const uploadErrorMessage = ref('');
   const isLoading = ref(false);
   const fileInput = ref(null);
-  const folderName = ref(null);
+  const concertName = ref(null);
+  const songName = ref(null);
 
-  async function uploadFile(file) {
+  function extractFolderName(fullPath) {
+    const parts = fullPath.split('/');
+    return parts[parts.length - 1];
+  }
+
+  function transformFolders(data) {
+    return data.map((item) => {
+      const newItem = {
+        name: item.name,
+        isFolder: item.isFolder,
+        files: item.files,
+        subFolder: item.subFolder
+          ? item.subFolder.map((sub) => ({
+              name: extractFolderName(sub.name),
+              isFolder: sub.isFolder,
+              files: sub.files,
+              subFolder: sub.subFolder
+                ? sub.subFolder.map((innerSub) => ({
+                    name: extractFolderName(innerSub.name),
+                    isFolder: innerSub.isFolder,
+                    files: innerSub.files,
+                  }))
+                : [],
+            }))
+          : [],
+      };
+      return newItem;
+    });
+  }
+
+  async function uploadFile(file, concertName, songName) {
     const allowedAudioFiles = [
       'audio/mpeg',
       'audio/mp3',
@@ -33,14 +64,16 @@ export const useFileStore = defineStore('file', () => {
 
     if (fileExists) {
       uploadError.value = true;
-      uploadErrorMessage.value = `Het geluidsbestand met de naam "${file.name}" bestaat al.`;
+      uploadErrorMessage.value = `Het bestand met de naam "${file.name}" bestaat al.`;
       return;
     }
 
     if (allowedAudioFiles.includes(file.type)) {
       const storageRef = firebaseStorageRef(
         storage,
-        folderName.value ? `${folderName.value}/${file.name}` : file.name
+        concertName.value
+          ? `${concertName.value}/${songName.value}/${file.name}`
+          : file.name
       );
       await uploadBytes(storageRef, file);
       fetchFileList();
@@ -49,33 +82,92 @@ export const useFileStore = defineStore('file', () => {
     } else {
       uploadError.value = true;
       uploadErrorMessage.value =
-        'Ongeldig bestandstype. Alleen geluidsbestanden zijn toegestaan!';
+        'Ongeldig bestandstype. Alleen specifieke bestandstypen zijn toegestaan!';
       isLoading.value = false;
     }
   }
+
+  // async function fetchFileList() {
+  //   isLoading.value = true;
+  //   const listRef = firebaseStorageRef(storage, '');
+  //   const listResult = await listAll(listRef);
+
+  //   try {
+  //     const items = listResult.items.map((item) => {
+  //       return {
+  //         name: item.name,
+  //         isFolder: false,
+  //         folderName: folderName.value,
+  //       };
+  //     });
+  //     const folders = listResult.prefixes.map((prefix) => {
+  //       return {
+  //         name: prefix.name,
+  //         isFolder: true,
+  //         files: [],
+  //       };
+  //     });
+
+  //     fileList.value = [...items, ...folders];
+  //     isLoading.value = false;
+  //   } catch (error) {
+  //     console.error('Fout bij ophalen van bestanden:', error);
+  //     isLoading.value = false;
+  //   }
+  // }
 
   async function fetchFileList() {
     isLoading.value = true;
     const listRef = firebaseStorageRef(storage, '');
-    const listResult = await listAll(listRef);
 
     try {
-      const items = listResult.items.map((item) => {
-        return {
-          name: item.name,
-          isFolder: false,
-          folderName: folderName.value,
-        };
-      });
-      const folders = listResult.prefixes.map((prefix) => {
-        return {
-          name: prefix.name,
-          isFolder: true,
-          files: [],
-        };
-      });
+      async function explorePrefixes(prefixes, currentPath = '') {
+        console.log('explorePrefixes ~ prefixes:', prefixes);
+        if (!prefixes || prefixes.length === 0) return [];
 
-      fileList.value = [...items, ...folders];
+        const folders = [];
+
+        for (const prefixRef of prefixes) {
+          const newPath = currentPath
+            ? `${currentPath}/${prefixRef.name.split('/').pop()}`
+            : prefixRef.name.split('/').pop();
+
+          const folderItem = {
+            name: newPath,
+            isFolder: true,
+            files: [],
+            subFolder: [],
+          };
+
+          const res = await listAll(prefixRef);
+          const subItems = res.items.map((itemRef) => ({
+            name: itemRef.name,
+            isFolder: false,
+          }));
+
+          folderItem.files = subItems;
+
+          folderItem.subFolder = await explorePrefixes(res.prefixes, newPath);
+          folders.push(folderItem);
+        }
+
+        return folders;
+      }
+
+      const listResult = await listAll(listRef);
+      const items = listResult.items.map((itemRef) => ({
+        name: itemRef.name,
+        isFolder: true,
+        files: [],
+        subFolder: [],
+      }));
+
+      const mainFolders = await explorePrefixes(listResult.prefixes);
+
+      const completeStructure = [...items, ...mainFolders];
+
+      fileList.value = transformFolders(completeStructure);
+
       isLoading.value = false;
     } catch (error) {
       console.error('Fout bij ophalen van bestanden:', error);
@@ -83,34 +175,22 @@ export const useFileStore = defineStore('file', () => {
     }
   }
 
-  async function fetchFilesInFolder(folder) {
-    const folderRef = firebaseStorageRef(storage, folder.name);
-    const folderListResult = await listAll(folderRef);
-
-    try {
-      folder.files = folderListResult.items.map((file) => {
-        return {
-          name: file.name,
-          isFolder: false,
-        };
-      });
-
-      fileList.value = [...fileList.value];
-    } catch (error) {
-      console.error('Fout bij ophalen van bestanden:', error);
-    }
-  }
-
-  async function download(path, file) {
-    const storageRef = firebaseStorageRef(storage, `${path}/${file.name}`);
+  async function download(concertPath, songPath, file) {
+    const storageRef = firebaseStorageRef(
+      storage,
+      `${concertPath}/${songPath}/${file.name}`
+    );
     const downloadURL = await getDownloadURL(storageRef);
 
     window.open(downloadURL, '_blank');
   }
 
-  async function deleteFile(path, file) {
-    const filePath = path ? `${path}/${file.name}` : file.name;
+  async function deleteFile(concertPath, songPath, file) {
+    const filePath = concertPath
+      ? `${concertPath}/${songPath}/${file.name}`
+      : file.name;
     const storageRef = firebaseStorageRef(storage, filePath);
+    console.log('deleteFile ~ storageRef:', storageRef.name);
 
     try {
       await deleteObject(storageRef);
@@ -123,7 +203,6 @@ export const useFileStore = defineStore('file', () => {
   return {
     uploadFile,
     fetchFileList,
-    fetchFilesInFolder,
     download,
     deleteFile,
     fileList,
@@ -131,6 +210,7 @@ export const useFileStore = defineStore('file', () => {
     uploadErrorMessage,
     isLoading,
     fileInput,
-    folderName,
+    concertName,
+    songName,
   };
 });

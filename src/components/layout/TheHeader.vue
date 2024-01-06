@@ -27,7 +27,7 @@
             link
             mode="btn-primary"
             to="/login"
-            v-if="!authStore.user.id"
+            v-if="!authStore.isLoggedIn"
             >Login</base-button
           >
           <base-button link mode="btn-primary" @click="authStore.logout" v-else
