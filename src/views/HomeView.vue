@@ -121,14 +121,16 @@
                         <li
                           v-for="(file, fileIndex) in subItem.files"
                           :key="fileIndex"
-                          class="list-group-item d-flex justify-content-between align-items-center"
+                          class="list-group-item d-flex align-items-center"
                         >
-                          {{ file.name }}
+                          <div class="flex-grow-1 text-truncate">
+                            {{ file.name }}
+                          </div>
                           <div class="d-flex">
                             <base-button
                               v-if="authStore.isAdmin"
                               class="m-1"
-                              mode="btn-danger"
+                              mode="btn-danger btn-sm"
                               @click="
                                 store.deleteFile(item.name, subItem.name, file)
                               "
@@ -137,7 +139,7 @@
                             </base-button>
                             <base-button
                               class="m-1"
-                              mode="btn-primary"
+                              mode="btn-primary btn-sm"
                               @click="
                                 store.download(item.name, subItem.name, file)
                               "

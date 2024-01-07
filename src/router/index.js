@@ -17,7 +17,7 @@ const router = createRouter({
       component: LoginView,
     },
     {
-      path: '/:pathMatch(.*)*',
+      path: '/:catchAll(.*)',
       component: PageNotFound,
     },
   ],
