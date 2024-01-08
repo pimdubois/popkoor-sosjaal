@@ -1,5 +1,8 @@
 <template>
   <base-card>
+    <div v-if="!!store.errorMessage" class="alert alert-danger">
+      {{ store.errorMessage }}
+    </div>
     <form @submit.prevent="submitForm">
       <div class="mb-3">
         <label for="email" class="form-label">Email</label>
@@ -32,17 +35,14 @@
 
 <script setup>
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
 const store = useAuthStore();
 const email = ref(null);
 const password = ref(null);
-const router = useRouter();
 const formIsValid = ref(true);
-const error = ref(null);
 
-const submitForm = async () => {
+const submitForm = () => {
   formIsValid.value = true;
 
   if (
@@ -54,12 +54,7 @@ const submitForm = async () => {
     return;
   }
 
-  try {
-    await store.login(email.value, password.value);
-    router.replace('/');
-  } catch (error) {
-    error.value = error.message || 'Failed to authenticate, try later.';
-  }
+  store.login(email.value, password.value);
 };
 
 // const tryLogin = () => {

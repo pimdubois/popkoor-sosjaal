@@ -2,9 +2,13 @@
   <header>
     <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3">
       <div class="container">
-        <base-button class="navbar-brand" to="/" link
-          >Popkoor SoSjaal</base-button
-        >
+        <base-button class="navbar-brand" to="/" link>
+          <img
+            src="/src/assets/Logo SoSjaal.png"
+            alt="Popkoor SoSjaal"
+            height="50"
+          />
+        </base-button>
         <button
           class="navbar-toggler"
           type="button"
@@ -27,7 +31,7 @@
             link
             mode="btn-primary"
             to="/login"
-            v-if="!authStore.user.id"
+            v-if="!authStore.isLoggedIn"
             >Login</base-button
           >
           <base-button link mode="btn-primary" @click="authStore.logout" v-else

@@ -3,14 +3,12 @@ import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyBMoY1nLjA3nEilfPreGzDjrqlxpXEYafE',
-  authDomain: 'vue-http-demo-db432.firebaseapp.com',
-  databaseURL:
-    'https://vue-http-demo-db432-default-rtdb.europe-west1.firebasedatabase.app',
-  projectId: 'vue-http-demo-db432',
-  storageBucket: 'vue-http-demo-db432.appspot.com',
-  messagingSenderId: '208237481791',
-  appId: '1:208237481791:web:8281757e3298c640d84d8a',
+  apiKey: 'AIzaSyC9qQv81rNNQQBDk0c1MheKec3K8rrS1l8',
+  authDomain: 'popkoor-sosjaal.firebaseapp.com',
+  projectId: 'popkoor-sosjaal',
+  storageBucket: 'popkoor-sosjaal.appspot.com',
+  messagingSenderId: '1000526704798',
+  appId: '1:1000526704798:web:15df8810260115086ecb8f',
 };
 const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
